@@ -1,27 +1,34 @@
+import streamlit as st
 import random
+import pandas as pd
 
-comparison_count = 0  # Global counter
+st.set_page_config(page_title="Min-Max using Divide & Conquer", page_icon="📊")
 
+st.title("📊 Min-Max using Divide and Conquer")
+st.write("Analysis of Divide and Conquer vs Naive Approach")
+
+# Global comparison counter
+comparison_count = 0
+
+
+# Divide and Conquer Function
 def min_max_dc(arr, low, high):
     global comparison_count
 
-    # Base case: single element
     if low == high:
         return arr[low], arr[low]
 
-    # Base case: two elements
     if high == low + 1:
         comparison_count += 1
         if arr[low] < arr[high]:
             return arr[low], arr[high]
         return arr[high], arr[low]
 
-    # Divide
     mid = (low + high) // 2
+
     lmin, lmax = min_max_dc(arr, low, mid)
     rmin, rmax = min_max_dc(arr, mid + 1, high)
 
-    # Conquer: combine with 2 comparisons
     comparison_count += 1
     overall_min = lmin if lmin < rmin else rmin
 
@@ -31,8 +38,10 @@ def min_max_dc(arr, low, high):
     return overall_min, overall_max
 
 
+# Naive Method
 def min_max_naive(arr):
-    mn, mx = arr[0], arr[0]
+    mn = arr[0]
+    mx = arr[0]
     comps = 0
 
     for x in arr[1:]:
@@ -47,33 +56,106 @@ def min_max_naive(arr):
     return mn, mx, comps
 
 
-# --- Demonstration on small array ---
-arr = [3, 1, 7, 4, 9, 2, 8, 5, 6, 0]
+# ------------------ User Input ------------------
 
-comparison_count = 0
-mn, mx = min_max_dc(arr, 0, len(arr) - 1)
-dc_comps = comparison_count
+st.header("Enter Array")
 
-_, _, naive_comps = min_max_naive(arr)
+choice = st.radio(
+    "Choose Input Method",
+    ("Manual Input", "Random Array")
+)
 
-print(f'Array: {arr}')
-print(f'Min: {mn}, Max: {mx}')
-print(f'D&C Comparisons: {dc_comps}')
-print(f'Naive Comparisons: {naive_comps}')
+if choice == "Manual Input":
 
-# --- Performance Analysis ---
-print(f'\n{"Size":>8} {"DC Comps":>12} {"Naive Comps":>14} {"Formula 3n/2-2":>16}')
-print('-' * 56)
+    numbers = st.text_input(
+        "Enter integers separated by commas",
+        "3,1,7,4,9,2,8,5,6,0"
+    )
 
-for size in [10, 100, 1000, 10000]:
-    arr = [random.randint(1, 10000) for _ in range(size)]
+    try:
+        arr = [int(x.strip()) for x in numbers.split(",")]
+
+    except:
+        st.error("Please enter valid integers.")
+        st.stop()
+
+else:
+
+    size = st.slider("Array Size", 5, 100, 10)
+
+    arr = [random.randint(1, 100) for _ in range(size)]
+
+    st.write("Generated Array")
+    st.write(arr)
+
+
+# ------------------ Run Algorithm ------------------
+
+if st.button("Find Min & Max"):
 
     comparison_count = 0
-    mn, mx = min_max_dc(arr, 0, len(arr) - 1)
-    dc = comparison_count
 
-    _, _, naive = min_max_naive(arr)
+    mn, mx = min_max_dc(arr, 0, len(arr)-1)
 
-    formula = 3 * size // 2 - 2
+    dc_comp = comparison_count
 
-    print(f'{size:>8} {dc:>12} {naive:>14} {formula:>16}')
+    _, _, naive_comp = min_max_naive(arr)
+
+    st.success("Result")
+
+    col1, col2 = st.columns(2)
+
+    col1.metric("Minimum", mn)
+    col2.metric("Maximum", mx)
+
+    st.write("### Comparison Count")
+
+    st.write(f"**Divide & Conquer :** {dc_comp}")
+
+    st.write(f"**Naive Method :** {naive_comp}")
+
+
+# ------------------ Performance Analysis ------------------
+
+st.header("Performance Analysis")
+
+if st.button("Generate Performance Table"):
+
+    sizes = [10, 100, 1000, 10000]
+
+    data = []
+
+    for size in sizes:
+
+        arr = [random.randint(1, 10000) for _ in range(size)]
+
+        comparison_count = 0
+
+        mn, mx = min_max_dc(arr, 0, len(arr)-1)
+
+        dc = comparison_count
+
+        _, _, naive = min_max_naive(arr)
+
+        formula = (3 * size) // 2 - 2
+
+        data.append([size, dc, naive, formula])
+
+    df = pd.DataFrame(
+        data,
+        columns=[
+            "Array Size",
+            "D&C Comparisons",
+            "Naive Comparisons",
+            "3n/2 - 2"
+        ]
+    )
+
+    st.dataframe(df, use_container_width=True)
+
+    st.line_chart(
+        df.set_index("Array Size")[["D&C Comparisons", "Naive Comparisons"]]
+    )
+
+st.markdown("---")
+st.caption("Design and Analysis of Algorithms Lab")
